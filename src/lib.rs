@@ -1,17 +1,22 @@
-use std::{ops::Deref, str::FromStr, fmt::Debug};
 use std::io::prelude::*;
+use std::{fmt::Debug, ops::Deref, str::FromStr};
 
-use diesel::serialize::Output;
-use diesel::{deserialize::{FromSql, self}, sql_types::Uuid, pg::{Pg, PgValue}, serialize::{ToSql, self, IsNull}, FromSqlRow};
 use diesel::expression::AsExpression;
+use diesel::serialize::Output;
+use diesel::{
+    deserialize::{self, FromSql},
+    pg::{Pg, PgValue},
+    serialize::{self, IsNull, ToSql},
+    sql_types::Uuid,
+    FromSqlRow,
+};
 use rusty_ulid::{DecodingError, Ulid};
-use serde::Serialize;
 use serde::Deserialize;
+use serde::Serialize;
 
-
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
-#[derive(AsExpression, FromSqlRow)]
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, AsExpression, FromSqlRow,
+)]
 #[diesel(sql_type = Uuid)]
 pub struct DieselUlid(rusty_ulid::Ulid);
 
@@ -29,13 +34,13 @@ impl TryFrom<&[u8]> for DieselUlid {
     type Error = DecodingError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(DieselUlid{0: rusty_ulid::Ulid::try_from(value)?})
+        Ok(DieselUlid(rusty_ulid::Ulid::try_from(value)?))
     }
 }
 
 impl From<&[u8; 16]> for DieselUlid {
     fn from(value: &[u8; 16]) -> Self {
-        DieselUlid{0: rusty_ulid::Ulid::from(*value)}
+        DieselUlid(rusty_ulid::Ulid::from(*value))
     }
 }
 
@@ -57,19 +62,19 @@ impl FromStr for DieselUlid {
     type Err = DecodingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {0: Ulid::from_str(s)? })
+        Ok(Self(Ulid::from_str(s)?))
     }
 }
 
 impl From<rusty_ulid::Ulid> for DieselUlid {
     fn from(value: rusty_ulid::Ulid) -> Self {
-        Self {0: value}
+        Self(value)
     }
 }
 
 impl From<DieselUlid> for rusty_ulid::Ulid {
     fn from(value: DieselUlid) -> Self {
-        rusty_ulid::Ulid::from(value.0)
+        value.0
     }
 }
 
@@ -100,14 +105,15 @@ impl From<DieselUlid> for uuid::Uuid {
     }
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use std::{num::NonZeroU32, str::FromStr};
 
-    use diesel::{sql_types::Uuid, pg::{Pg, PgValue, TypeOidLookup}, deserialize::FromSql};
+    use diesel::{
+        deserialize::FromSql,
+        pg::{Pg, PgValue, TypeOidLookup},
+        sql_types::Uuid,
+    };
 
     use crate::DieselUlid;
 
@@ -119,7 +125,10 @@ mod tests {
 
         // Original
         let orig_ulid = rusty_ulid::Ulid::from(ulid.clone());
-        assert_eq!(orig_ulid.to_string(), "01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string());
+        assert_eq!(
+            orig_ulid.to_string(),
+            "01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string()
+        );
 
         // Back
         let into_before = DieselUlid::from(orig_ulid);
@@ -135,18 +144,14 @@ mod tests {
 
         assert_eq!("7ZZZZZZZZZZZZP2RK3CHJPCC9J", &bytes_ulid.to_string());
 
-
         let from_str = DieselUlid::from_str("7ZZZZZZZZZZZZP2RK3CHJPCC9J").unwrap();
         assert_eq!(bytes, from_str.as_byte_array())
-
     }
-
 
     #[test]
     fn conversions_uuid() {
-
         let orig_string = "67e55044-10b1-426f-9247-bb680e5fe0c8";
-        
+
         let from_str = uuid::Uuid::from_str(orig_string).unwrap();
 
         let as_ulid = DieselUlid::from(from_str);
@@ -156,13 +161,15 @@ mod tests {
         assert_eq!(orig_string, back_to_uuid.to_string().as_str())
     }
 
-
     #[test]
     fn test_generate() {
         use chrono::Utc;
         let ulid = DieselUlid::generate();
         // Should be the same millisecond
-        assert_eq!(ulid.datetime().timestamp_millis(), Utc::now().timestamp_millis())
+        assert_eq!(
+            ulid.datetime().timestamp_millis(),
+            Utc::now().timestamp_millis()
+        )
     }
 
     #[test]
@@ -171,7 +178,6 @@ mod tests {
 
         assert_eq!(format!("{:?}", ulid), format!("7ZZZZZZZZZZZZP2RK3CHJPCC9J"))
     }
-
 
     // Can not test to_sql because diesel does not export Output::test()
     // #[test]
@@ -195,14 +201,20 @@ mod tests {
             0x31, 0x32,
         ];
         let input_uuid = DieselUlid::try_from(bytes.as_slice()).unwrap();
-        let output_uuid =
-            FromSql::<Uuid, Pg>::from_sql(PgValue::new(input_uuid.as_byte_array().as_slice(), &NonZeroU32::new(5).unwrap() as &dyn TypeOidLookup)).unwrap();
+        let output_uuid = FromSql::<Uuid, Pg>::from_sql(PgValue::new(
+            input_uuid.as_byte_array().as_slice(),
+            &NonZeroU32::new(5).unwrap() as &dyn TypeOidLookup,
+        ))
+        .unwrap();
         assert_eq!(input_uuid, output_uuid);
     }
 
     #[test]
     fn bad_uuid_from_sql() {
-        let uuid = DieselUlid::from_sql(PgValue::new(b"boom", &NonZeroU32::new(5).unwrap() as &dyn TypeOidLookup));
+        let uuid = DieselUlid::from_sql(PgValue::new(
+            b"boom",
+            &NonZeroU32::new(5).unwrap() as &dyn TypeOidLookup,
+        ));
         assert!(uuid.is_err());
         // The error message changes slightly between different
         // uuid versions, so we just check on the relevant parts
