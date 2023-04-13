@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use std::io::prelude::*;
 use std::{fmt::Debug, ops::Deref, str::FromStr};
 
@@ -41,6 +43,12 @@ impl TryFrom<&[u8]> for DieselUlid {
 impl From<&[u8; 16]> for DieselUlid {
     fn from(value: &[u8; 16]) -> Self {
         DieselUlid(rusty_ulid::Ulid::from(*value))
+    }
+}
+
+impl From<[u8; 16]> for DieselUlid {
+    fn from(value: [u8; 16]) -> Self {
+        DieselUlid(rusty_ulid::Ulid::from(value))
     }
 }
 
@@ -143,6 +151,9 @@ mod tests {
         let bytes_ulid = DieselUlid::try_from(bytes.as_slice()).unwrap();
 
         assert_eq!("7ZZZZZZZZZZZZP2RK3CHJPCC9J", &bytes_ulid.to_string());
+
+        let direct_conv = DieselUlid::from(bytes);
+        assert_eq!(bytes_ulid, direct_conv);
 
         let from_str = DieselUlid::from_str("7ZZZZZZZZZZZZP2RK3CHJPCC9J").unwrap();
         assert_eq!(bytes, from_str.as_byte_array())

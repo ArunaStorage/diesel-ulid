@@ -1,6 +1,6 @@
 [package]
 name = "diesel-ulid"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Diesel-rs adapter for Ulid (rusty-ulid) to Postgres UUIDs"
 authors = ["Sebastian Beyvers <sb@pus.de>"]
@@ -14,7 +14,6 @@ rusty_ulid = { version = "2.0.0", default-features = false, features = ["rand", 
 serde = { version = "1.0", features = ["derive"] }
 diesel = { version = "2.0.3", features = ["postgres", "i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }
 uuid = "1.3.1"
-
 
 [dev-dependencies]
 chrono = "0.4.24"

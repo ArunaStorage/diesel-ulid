@@ -46,11 +46,11 @@ you could use diesel-ulid as follows:
 
 ```rust
 use diesel::prelude::*;
-use diesel-ulid::DieselUlid;
+use diesel-ulid::DieselUlid as Ulid;
 
 #[derive(Queryable)]
 pub struct Post {
-    pub id: DieselUlid,
+    pub id: Ulid,
     pub title: String,
     pub body: String,
     pub published: bool,
