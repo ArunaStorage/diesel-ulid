@@ -142,6 +142,35 @@ mod tests {
     }
 
 
+    #[test]
+    fn conversions_uuid() {
+
+        let orig_string = "67e55044-10b1-426f-9247-bb680e5fe0c8";
+        
+        let from_str = uuid::Uuid::from_str(orig_string).unwrap();
+
+        let as_ulid = DieselUlid::from(from_str);
+
+        let back_to_uuid = uuid::Uuid::from(as_ulid);
+
+        assert_eq!(orig_string, back_to_uuid.to_string().as_str())
+    }
+
+
+    #[test]
+    fn test_generate() {
+        use chrono::Utc;
+        let ulid = DieselUlid::generate();
+        // Should be the same millisecond
+        assert_eq!(ulid.datetime().timestamp_millis(), Utc::now().timestamp_millis())
+    }
+
+    #[test]
+    fn test_format() {
+        let ulid = DieselUlid::from_str("7ZZZZZZZZZZZZP2RK3CHJPCC9J").unwrap();
+
+        assert_eq!(format!("{:?}", ulid), format!("7ZZZZZZZZZZZZP2RK3CHJPCC9J"))
+    }
 
 
     // Can not test to_sql because diesel does not export Output::test()
