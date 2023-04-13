@@ -1,5 +1,3 @@
-# diesel-ulid
-
 [![Rust](https://img.shields.io/badge/built_with-Rust-dca282.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-brightgreen.svg)](https://github.com/ArunaStorage/ArunaServer/blob/main/LICENSE-APACHE)
 ![CI](https://github.com/ArunaStorage/diesel-ulid/actions/workflows/push.yaml/badge.svg?branch=main)
@@ -9,6 +7,7 @@
 [![Safety Dance](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 ___
 
+# diesel-ulid
 
 [Ulid](https://github.com/ulid/spec) mapping for [diesel-rs](https://github.com/diesel-rs/diesel). This crate contains custom mapping for the `Ulid` implementation from [rusty-ulid](https://github.com/huxi/rusty_ulid) to [diesel::sql_types::Uuid](https://docs.rs/diesel/latest/diesel/sql_types/struct.Uuid.html). With this adapter you can use these types in Diesel as regular Postgres UUID type.
 
@@ -21,7 +20,7 @@ cargo add diesel-ulid
 or add:
 
 ```
-diesel-ulid = 0.1.0
+diesel-ulid = 0.1.1
 ```
 
 to your `Cargo.toml`.
