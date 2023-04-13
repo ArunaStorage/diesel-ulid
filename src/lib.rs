@@ -1,10 +1,16 @@
-use std::{ops::Deref, io::Write, str::FromStr};
+use std::{ops::Deref, io::Write, str::FromStr, fmt::Debug};
 
-use diesel::{deserialize::{FromSql, self}, sql_types::Uuid, pg::{Pg, PgValue}, serialize::{ToSql, Output, self, IsNull}};
+use diesel::{deserialize::{FromSql, self}, sql_types::Uuid, pg::{Pg, PgValue}, serialize::{ToSql, Output, self, IsNull}, FromSqlRow};
+use diesel::expression::AsExpression;
 use rusty_ulid::{DecodingError, Ulid};
+use serde::Serialize;
+use serde::Deserialize;
 
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+#[derive(AsExpression, FromSqlRow)]
+#[diesel(sql_type = Uuid)]
 pub struct ArunaUlid(rusty_ulid::Ulid);
 
 
@@ -22,6 +28,11 @@ impl ArunaUlid {
     }
 }
 
+impl Debug for ArunaUlid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0.to_string())
+    }
+}
 
 impl Deref for ArunaUlid {
     type Target = rusty_ulid::Ulid;
