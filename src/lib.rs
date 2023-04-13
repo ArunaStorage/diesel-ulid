@@ -18,7 +18,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, AsExpression, FromSqlRow
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, AsExpression, FromSqlRow
 )]
 #[diesel(sql_type = Uuid)]
 pub struct DieselUlid(rusty_ulid::Ulid);
