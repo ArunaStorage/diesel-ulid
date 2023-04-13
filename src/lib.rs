@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use std::fmt::Display;
 use std::io::prelude::*;
 use std::{fmt::Debug, ops::Deref, str::FromStr};
 
@@ -59,6 +60,12 @@ impl From<[u8; 16]> for DieselUlid {
 }
 
 impl Debug for DieselUlid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self)
+    }
+}
+
+impl Display for DieselUlid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0.to_string())
     }
@@ -197,6 +204,15 @@ mod tests {
     }
 
     #[test]
+    fn test_debug_display() {
+        let ulid = DieselUlid::generate();
+        // Should be the same millisecond
+        assert_eq!(
+            format!("{ulid}"), format!("{:?}", ulid)
+        )
+    }
+
+    #[test]
     fn test_format() {
         let ulid = DieselUlid::from_str("7ZZZZZZZZZZZZP2RK3CHJPCC9J").unwrap();
 
@@ -211,7 +227,6 @@ mod tests {
     //         0xFF_u8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
     //         0x31, 0x32,
     //     ];
-
     //     let test_uuid = DieselUlid::try_from(bytes.as_slice()).unwrap();
     //     let mut bytes = Output::test(&mut buffer);
     //     ToSql::<Uuid, Pg>::to_sql(&test_uuid, &mut bytes).unwrap();
