@@ -2,7 +2,7 @@
 
 [![Rust](https://img.shields.io/badge/built_with-Rust-dca282.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-brightgreen.svg)](https://github.com/ArunaStorage/ArunaServer/blob/main/LICENSE-APACHE)
-![CI](https://github.com/ArunaStorage/diesel-ulid/actions/workflows/push.yaml/badge.svg)
+![CI](https://github.com/ArunaStorage/diesel-ulid/actions/workflows/push.yaml/badge.svg?branch=main)
 [![Codecov](https://codecov.io/github/ArunaStorage/diesel-ulid/coverage.svg?branch=main)](https://codecov.io/gh/ArunaStorage/ArunaServer)
 [![Dependency status](https://deps.rs/repo/github/ArunaStorage/diesel-ulid/status.svg)](https://deps.rs/repo/github/ArunaStorage/diesel-ulid)
 ___
