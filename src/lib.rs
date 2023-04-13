@@ -17,7 +17,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, AsExpression, FromSqlRow,
+    Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, AsExpression, FromSqlRow
 )]
 #[diesel(sql_type = Uuid)]
 pub struct DieselUlid(rusty_ulid::Ulid);
@@ -29,6 +29,12 @@ impl DieselUlid {
 
     pub fn as_byte_array(&self) -> [u8; 16] {
         <[u8; 16]>::from(self.0)
+    }
+}
+
+impl Default for DieselUlid{
+    fn default() -> Self {
+        DieselUlid{0: rusty_ulid::Ulid::from(0_u128)}
     }
 }
 
@@ -170,6 +176,14 @@ mod tests {
         let back_to_uuid = uuid::Uuid::from(as_ulid);
 
         assert_eq!(orig_string, back_to_uuid.to_string().as_str())
+    }
+
+    #[test]
+    fn test_default() {
+        let ulid = DieselUlid::default();
+        let ulid_2 = DieselUlid::from(rusty_ulid::Ulid::from(0x0000_0000_0000_0000_0000_0000_0000_0000));
+
+        assert_eq!(ulid, ulid_2)
     }
 
     #[test]
