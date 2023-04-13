@@ -1,5 +1,13 @@
 # diesel-ulid
 
+[![Rust](https://img.shields.io/badge/built_with-Rust-dca282.svg)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-brightgreen.svg)](https://github.com/ArunaStorage/ArunaServer/blob/main/LICENSE-APACHE)
+![CI](https://github.com/ArunaStorage/diesel-ulid/actions/workflows/push.yaml/badge.svg)
+[![Codecov](https://codecov.io/github/ArunaStorage/diesel-ulid/coverage.svg?branch=main)](https://codecov.io/gh/ArunaStorage/ArunaServer)
+[![Dependency status](https://deps.rs/repo/github/ArunaStorage/diesel-ulid/status.svg)](https://deps.rs/repo/github/ArunaStorage/diesel-ulid)
+___
+
+
 [Ulid](https://github.com/ulid/spec) mapping for [diesel-rs](https://github.com/diesel-rs/diesel). This crate contains custom mapping for the `Ulid` implementation from [rusty-ulid](https://github.com/huxi/rusty_ulid) to [diesel::sql_types::Uuid](https://docs.rs/diesel/latest/diesel/sql_types/struct.Uuid.html). With this adapter you can use these types in Diesel as regular Postgres UUID type.
 
 ## Import
