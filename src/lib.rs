@@ -15,6 +15,15 @@ use serde::Deserialize;
 #[diesel(sql_type = Uuid)]
 pub struct DieselUlid(rusty_ulid::Ulid);
 
+impl DieselUlid {
+    pub fn generate() -> Self {
+        DieselUlid(Ulid::generate())
+    }
+
+    pub fn as_byte_array(&self) -> [u8; 16] {
+        <[u8; 16]>::from(self.0)
+    }
+}
 
 impl TryFrom<&[u8]> for DieselUlid {
     type Error = DecodingError;
@@ -24,13 +33,9 @@ impl TryFrom<&[u8]> for DieselUlid {
     }
 }
 
-impl DieselUlid {
-    pub fn generate() -> Self {
-        DieselUlid(Ulid::generate())
-    }
-
-    pub fn as_byte_array(&self) -> [u8; 16] {
-        <[u8; 16]>::from(self.0)
+impl From<&[u8; 16]> for DieselUlid {
+    fn from(value: &[u8; 16]) -> Self {
+        DieselUlid{0: rusty_ulid::Ulid::from(*value)}
     }
 }
 
@@ -81,6 +86,22 @@ impl ToSql<Uuid, Pg> for DieselUlid {
             .map_err(Into::into)
     }
 }
+
+// UUID conversions
+impl From<uuid::Uuid> for DieselUlid {
+    fn from(value: uuid::Uuid) -> Self {
+        DieselUlid::from(value.as_bytes())
+    }
+}
+
+impl From<DieselUlid> for uuid::Uuid {
+    fn from(value: DieselUlid) -> Self {
+        uuid::Uuid::from_bytes(value.as_byte_array())
+    }
+}
+
+
+
 
 #[cfg(test)]
 mod tests {
