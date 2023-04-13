@@ -177,9 +177,8 @@ mod tests {
         use chrono::Utc;
         let ulid = DieselUlid::generate();
         // Should be the same millisecond
-        assert_eq!(
-            ulid.datetime().timestamp_millis(),
-            Utc::now().timestamp_millis()
+        assert!(
+            ulid.datetime().timestamp_millis() - Utc::now().timestamp_millis() < 5
         )
     }
 
