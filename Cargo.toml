@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rusty_ulid = "2.0.0"
+rusty_ulid = { version = "2.0.0", default-features = false, features = ["rand", "chrono", "serde"]}
 serde = { version = "1.0", features = ["derive"] }
-diesel = { version = "2.0.0", features = ["postgres"] }
+diesel = { version = "2.0.0", features = ["postgres", "i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }
 
 
 dotenvy = "0.15"
