@@ -1,9 +1,6 @@
 #![forbid(unsafe_code)]
 
-use std::fmt::Display;
-use std::io::prelude::*;
-use std::{fmt::Debug, ops::Deref, str::FromStr};
-
+use bytes::BufMut;
 use diesel::expression::AsExpression;
 use diesel::serialize::Output;
 use diesel::{
@@ -13,12 +10,28 @@ use diesel::{
     sql_types::Uuid,
     FromSqlRow,
 };
+use postgres_types::private::BytesMut;
+use postgres_types::{accepts, FromSql as PgFromSql, ToSql as PgToSql, Type};
 use rusty_ulid::{DecodingError, Ulid};
 use serde::Deserialize;
 use serde::Serialize;
+use std::error::Error;
+use std::fmt::Display;
+use std::io::prelude::*;
+use std::{fmt::Debug, ops::Deref, str::FromStr};
 
 #[derive(
-    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, AsExpression, FromSqlRow
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    Hash,
+    AsExpression,
+    FromSqlRow,
 )]
 #[diesel(sql_type = Uuid)]
 pub struct DieselUlid(rusty_ulid::Ulid);
@@ -33,9 +46,29 @@ impl DieselUlid {
     }
 }
 
-impl Default for DieselUlid{
+impl<'a> PgFromSql<'a> for DieselUlid {
+    fn from_sql(_: &Type, raw: &[u8]) -> Result<DieselUlid, Box<dyn Error + Sync + Send>> {
+        Ok(DieselUlid::try_from(raw)?)
+    }
+    accepts!(UUID);
+}
+
+impl PgToSql for DieselUlid {
+    fn to_sql(
+        &self,
+        _: &Type,
+        w: &mut BytesMut,
+    ) -> Result<postgres_types::IsNull, Box<dyn Error + Sync + Send>> {
+        w.put_slice(&self.as_byte_array());
+        Ok(postgres_types::IsNull::No)
+    }
+    accepts!(UUID);
+    postgres_types::to_sql_checked!();
+}
+
+impl Default for DieselUlid {
     fn default() -> Self {
-        DieselUlid{0: rusty_ulid::Ulid::from(0_u128)}
+        DieselUlid(rusty_ulid::Ulid::from(0_u128))
     }
 }
 
@@ -145,7 +178,7 @@ mod tests {
         assert_eq!(ulid.to_string(), "01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string());
 
         // Original
-        let orig_ulid = rusty_ulid::Ulid::from(ulid.clone());
+        let orig_ulid = rusty_ulid::Ulid::from(ulid);
         assert_eq!(
             orig_ulid.to_string(),
             "01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string()
@@ -188,7 +221,9 @@ mod tests {
     #[test]
     fn test_default() {
         let ulid = DieselUlid::default();
-        let ulid_2 = DieselUlid::from(rusty_ulid::Ulid::from(0x0000_0000_0000_0000_0000_0000_0000_0000));
+        let ulid_2 = DieselUlid::from(rusty_ulid::Ulid::from(
+            0x0000_0000_0000_0000_0000_0000_0000_0000,
+        ));
 
         assert_eq!(ulid, ulid_2)
     }
@@ -198,18 +233,14 @@ mod tests {
         use chrono::Utc;
         let ulid = DieselUlid::generate();
         // Should be the same millisecond
-        assert!(
-            ulid.datetime().timestamp_millis() - Utc::now().timestamp_millis() < 5
-        )
+        assert!(ulid.datetime().timestamp_millis() - Utc::now().timestamp_millis() < 5)
     }
 
     #[test]
     fn test_debug_display() {
         let ulid = DieselUlid::generate();
         // Should be the same millisecond
-        assert_eq!(
-            format!("{ulid}"), format!("{:?}", ulid)
-        )
+        assert_eq!(format!("{ulid}"), format!("{:?}", ulid))
     }
 
     #[test]
