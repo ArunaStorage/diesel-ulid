@@ -12,10 +12,15 @@ keywords = ["ulid", "uuid", "sortable", "identifier", "databases"]
 [dependencies]
 rusty_ulid = { version = "2.0.0", default-features = false, features = ["rand", "chrono", "serde"]}
 serde = { version = "1.0", features = ["derive"] }
-diesel = { version = "2.1.0", features = ["postgres", "i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }
-uuid = "1.4.0"
-postgres-types = { version = "0.2.5", features = ["derive"] }
+diesel = { version = "2.1.0", features = ["postgres", "i-implement-a-third-party-backend-and-opt-into-breaking-changes"], optional = true }
+uuid = { version = "1.4.1", features = ["serde", "v4"] }
+postgres-types = { version = "0.2.5", features = ["derive"], optional = true}
 bytes = "1.4.0"
 
 [dev-dependencies]
 chrono = "0.4.26"
+
+[features]
+default = ["postgres"]
+diesel = ["dep:diesel"]
+postgres = ["dep:postgres-types"]

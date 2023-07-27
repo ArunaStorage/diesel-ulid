@@ -1,8 +1,11 @@
 #![forbid(unsafe_code)]
 
 use bytes::BufMut;
+#[cfg(feature = "diesel")]
 use diesel::expression::AsExpression;
+#[cfg(feature = "diesel")]
 use diesel::serialize::Output;
+#[cfg(feature = "diesel")]
 use diesel::{
     deserialize::{self, FromSql},
     pg::{Pg, PgValue},
@@ -10,16 +13,19 @@ use diesel::{
     sql_types::Uuid,
     FromSqlRow,
 };
+#[cfg(feature = "postgres")]
 use postgres_types::private::BytesMut;
+#[cfg(feature = "postgres")]
 use postgres_types::{accepts, FromSql as PgFromSql, ToSql as PgToSql, Type};
 use rusty_ulid::{DecodingError, Ulid};
-use serde::Deserialize;
 use serde::Serialize;
+use serde::{Deserialize, Deserializer};
 use std::error::Error;
 use std::fmt::Display;
-use std::io::prelude::*;
 use std::{fmt::Debug, ops::Deref, str::FromStr};
+use uuid::Uuid;
 
+#[cfg(feature = "diesel")]
 #[derive(
     Copy,
     Clone,
@@ -36,6 +42,10 @@ use std::{fmt::Debug, ops::Deref, str::FromStr};
 #[diesel(sql_type = Uuid)]
 pub struct DieselUlid(rusty_ulid::Ulid);
 
+#[cfg(feature = "postgres")]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Hash)]
+pub struct DieselUlid(rusty_ulid::Ulid);
+
 impl DieselUlid {
     pub fn generate() -> Self {
         DieselUlid(Ulid::generate())
@@ -46,6 +56,7 @@ impl DieselUlid {
     }
 }
 
+#[cfg(feature = "postgres")]
 impl<'a> PgFromSql<'a> for DieselUlid {
     fn from_sql(_: &Type, raw: &[u8]) -> Result<DieselUlid, Box<dyn Error + Sync + Send>> {
         Ok(DieselUlid::try_from(raw)?)
@@ -53,6 +64,22 @@ impl<'a> PgFromSql<'a> for DieselUlid {
     accepts!(UUID);
 }
 
+impl<'de> Deserialize<'de> for DieselUlid {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let temp = String::deserialize(deserializer)?;
+        match DieselUlid::from_str(&temp) {
+            Ok(v) => Ok(v),
+            Err(_) => Uuid::parse_str(&temp)
+                .map_err(|_| serde::de::Error::custom("Invalid UUID"))
+                .map(DieselUlid::from),
+        }
+    }
+}
+
+#[cfg(feature = "postgres")]
 impl PgToSql for DieselUlid {
     fn to_sql(
         &self,
@@ -132,12 +159,14 @@ impl From<DieselUlid> for rusty_ulid::Ulid {
     }
 }
 
+#[cfg(feature = "diesel")]
 impl FromSql<Uuid, Pg> for DieselUlid {
     fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
         DieselUlid::try_from(value.as_bytes()).map_err(Into::into)
     }
 }
 
+#[cfg(feature = "diesel")]
 impl ToSql<Uuid, Pg> for DieselUlid {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         out.write_all(&self.as_byte_array())
@@ -161,8 +190,9 @@ impl From<DieselUlid> for uuid::Uuid {
 
 #[cfg(test)]
 mod tests {
-    use std::{num::NonZeroU32, str::FromStr};
+    use std::str::FromStr;
 
+    #[cfg(feature = "diesel")]
     use diesel::{
         deserialize::FromSql,
         pg::{Pg, PgValue, TypeOidLookup},
@@ -265,6 +295,7 @@ mod tests {
     // }
 
     #[test]
+    #[cfg(feature = "diesel")]
     fn some_uuid_from_sql() {
         let bytes = [
             0xFF_u8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
@@ -280,6 +311,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "diesel")]
     fn bad_uuid_from_sql() {
         let uuid = DieselUlid::from_sql(PgValue::new(
             b"boom",
@@ -298,6 +330,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "diesel")]
     fn no_uuid_from_sql() {
         let uuid = DieselUlid::from_nullable_sql(None);
         assert_eq!(
