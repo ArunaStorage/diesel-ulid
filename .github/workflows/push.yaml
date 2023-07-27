@@ -16,4 +16,9 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features -- --include-ignored
+          args: -F diesel -- --include-ignored
+      - name: cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -F postgres -- --include-ignored
