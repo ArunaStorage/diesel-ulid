@@ -10,7 +10,7 @@ use diesel::{
     deserialize::{self, FromSql},
     pg::{Pg, PgValue},
     serialize::{self, IsNull, ToSql},
-    sql_types::Uuid,
+    sql_types::Uuid as DieselUUID,
     FromSqlRow,
 };
 #[cfg(feature = "postgres")]
@@ -22,24 +22,16 @@ use serde::Serialize;
 use serde::{Deserialize, Deserializer};
 use std::error::Error;
 use std::fmt::Display;
+#[cfg(feature = "diesel")]
+use std::io::Write;
 use std::{fmt::Debug, ops::Deref, str::FromStr};
 use uuid::Uuid;
 
 #[cfg(feature = "diesel")]
 #[derive(
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Serialize,
-    Deserialize,
-    Hash,
-    AsExpression,
-    FromSqlRow,
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Hash, AsExpression, FromSqlRow,
 )]
-#[diesel(sql_type = Uuid)]
+#[diesel(sql_type = DieselUUID)]
 pub struct DieselUlid(rusty_ulid::Ulid);
 
 #[cfg(feature = "postgres")]
@@ -160,14 +152,14 @@ impl From<DieselUlid> for rusty_ulid::Ulid {
 }
 
 #[cfg(feature = "diesel")]
-impl FromSql<Uuid, Pg> for DieselUlid {
+impl FromSql<DieselUUID, Pg> for DieselUlid {
     fn from_sql(value: PgValue<'_>) -> deserialize::Result<Self> {
         DieselUlid::try_from(value.as_bytes()).map_err(Into::into)
     }
 }
 
 #[cfg(feature = "diesel")]
-impl ToSql<Uuid, Pg> for DieselUlid {
+impl ToSql<DieselUUID, Pg> for DieselUlid {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         out.write_all(&self.as_byte_array())
             .map(|_| IsNull::No)
@@ -196,8 +188,10 @@ mod tests {
     use diesel::{
         deserialize::FromSql,
         pg::{Pg, PgValue, TypeOidLookup},
-        sql_types::Uuid,
+        sql_types::Uuid as DieselUUID,
     };
+    #[cfg(feature = "diesel")]
+    use std::num::NonZeroU32;
 
     use crate::DieselUlid;
 
@@ -314,7 +308,7 @@ mod tests {
             0x31, 0x32,
         ];
         let input_uuid = DieselUlid::try_from(bytes.as_slice()).unwrap();
-        let output_uuid = FromSql::<Uuid, Pg>::from_sql(PgValue::new(
+        let output_uuid = FromSql::<DieselUUID, Pg>::from_sql(PgValue::new(
             input_uuid.as_byte_array().as_slice(),
             &NonZeroU32::new(5).unwrap() as &dyn TypeOidLookup,
         ))
