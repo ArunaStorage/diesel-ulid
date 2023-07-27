@@ -190,7 +190,7 @@ impl From<DieselUlid> for uuid::Uuid {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::{collections::HashMap, str::FromStr};
 
     #[cfg(feature = "diesel")]
     use diesel::{
@@ -246,6 +246,18 @@ mod tests {
         let back_to_uuid = uuid::Uuid::from(as_ulid);
 
         assert_eq!(orig_string, back_to_uuid.to_string().as_str())
+    }
+
+    #[test]
+    fn conversions_uuid_test_serde() {
+        let orig_string = r#"{"test" : "67e55044-10b1-426f-9247-bb680e5fe0c8"}"#;
+
+        let from_json: HashMap<String, DieselUlid> = serde_json::from_str(orig_string).unwrap();
+
+        assert_eq!(
+            from_json.get("test").unwrap().to_string().as_str(),
+            "37WN84845H89QS4HXVD075ZR68"
+        )
     }
 
     #[test]
