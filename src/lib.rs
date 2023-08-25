@@ -18,11 +18,11 @@ use postgres_types::private::BytesMut;
 #[cfg(feature = "postgres")]
 use postgres_types::{accepts, FromSql as PgFromSql, ToSql as PgToSql, Type};
 use rusty_ulid::{DecodingError, Ulid};
+use serde::de::{self, Unexpected, Visitor};
 use serde::Serialize;
 use serde::{Deserialize, Deserializer};
-use serde_with::{BytesOrString, DeserializeAs};
 use std::error::Error;
-use std::fmt::Display;
+use std::fmt::{self, Display};
 #[cfg(feature = "diesel")]
 use std::io::Write;
 use std::{fmt::Debug, ops::Deref, str::FromStr};
@@ -62,28 +62,68 @@ impl<'de> Deserialize<'de> for DieselUlid {
     where
         D: Deserializer<'de>,
     {
-        let temp = BytesOrString::deserialize_as(deserializer)?;
+        struct DieselUlidVisitor;
 
-        match DieselUlid::try_from(temp.as_slice()) {
-            Ok(v) => Ok(v),
-            Err(_) => match Uuid::from_slice(&temp).map(DieselUlid::from) {
-                Ok(v) => Ok(v),
-                Err(_) => match DieselUlid::from_str(
-                    String::from_utf8(temp.clone())
-                        .map_err(|_| serde::de::Error::custom("Invalid UUID"))?
-                        .as_str(),
-                ) {
+        impl<'de> Visitor<'de> for DieselUlidVisitor {
+            type Value = DieselUlid;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(
+                    formatter,
+                    "a string or bytes containing a diesel_ulid as uuid or ulid"
+                )
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match DieselUlid::from_str(s) {
                     Ok(v) => Ok(v),
-                    Err(_) => Uuid::parse_str(
-                        String::from_utf8(temp)
-                            .map_err(|_| serde::de::Error::custom("Invalid UUID"))?
-                            .as_str(),
-                    )
-                    .map_err(|_| serde::de::Error::custom("Invalid UUID"))
-                    .map(DieselUlid::from),
-                },
-            },
+                    Err(_) => match Uuid::from_str(s) {
+                        Ok(v) => Ok(DieselUlid::from(v)),
+                        Err(e) => Err(de::Error::invalid_value(
+                            Unexpected::Str(s),
+                            &e.to_string().as_str(),
+                        )),
+                    },
+                }
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                self.visit_str(&v)
+            }
+
+            fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                self.visit_bytes(&v.to_be_bytes())
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                if v.len() == 16 {
+                    return match DieselUlid::try_from(v) {
+                        Ok(v) => Ok(v),
+                        Err(e) => Err(de::Error::invalid_value(
+                            Unexpected::Bytes(v),
+                            &e.to_string().as_str(),
+                        )),
+                    };
+                } else {
+                    self.visit_str(std::str::from_utf8(v).map_err(|e| {
+                        de::Error::invalid_value(Unexpected::Bytes(v), &e.to_string().as_str())
+                    })?)
+                }
+            }
         }
+        deserializer.deserialize_bytes(DieselUlidVisitor)
     }
 }
 
@@ -268,6 +308,17 @@ mod tests {
             from_json.get("test").unwrap().to_string().as_str(),
             "37WN84845H89QS4HXVD075ZR68"
         )
+    }
+
+    #[test]
+    fn conversions_uuid_test_serde_bin() {
+        let ulid = DieselUlid::generate();
+
+        let serialized = bincode::serialize(&ulid).unwrap();
+
+        let deserialized: DieselUlid = bincode::deserialize(&serialized).unwrap();
+
+        assert_eq!(ulid, deserialized)
     }
 
     #[test]
