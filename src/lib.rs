@@ -20,6 +20,7 @@ use postgres_types::{accepts, FromSql as PgFromSql, ToSql as PgToSql, Type};
 use rusty_ulid::{DecodingError, Ulid};
 use serde::Serialize;
 use serde::{Deserialize, Deserializer};
+use serde_with::{BytesOrString, DeserializeAs};
 use std::error::Error;
 use std::fmt::Display;
 #[cfg(feature = "diesel")]
@@ -61,12 +62,27 @@ impl<'de> Deserialize<'de> for DieselUlid {
     where
         D: Deserializer<'de>,
     {
-        let temp = String::deserialize(deserializer)?;
-        match DieselUlid::from_str(&temp) {
+        let temp = BytesOrString::deserialize_as(deserializer)?;
+
+        match DieselUlid::try_from(temp.as_slice()) {
             Ok(v) => Ok(v),
-            Err(_) => Uuid::parse_str(&temp)
-                .map_err(|_| serde::de::Error::custom("Invalid UUID"))
-                .map(DieselUlid::from),
+            Err(_) => match Uuid::from_slice(&temp).map(DieselUlid::from) {
+                Ok(v) => Ok(v),
+                Err(_) => match DieselUlid::from_str(
+                    String::from_utf8(temp.clone())
+                        .map_err(|_| serde::de::Error::custom("Invalid UUID"))?
+                        .as_str(),
+                ) {
+                    Ok(v) => Ok(v),
+                    Err(_) => Uuid::parse_str(
+                        String::from_utf8(temp)
+                            .map_err(|_| serde::de::Error::custom("Invalid UUID"))?
+                            .as_str(),
+                    )
+                    .map_err(|_| serde::de::Error::custom("Invalid UUID"))
+                    .map(DieselUlid::from),
+                },
+            },
         }
     }
 }

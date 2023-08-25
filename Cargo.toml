@@ -1,6 +1,6 @@
 [package]
 name = "diesel-ulid"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "Diesel-rs & tokio_postgres adapter for Ulid (rusty-ulid) to Postgres UUIDs"
 authors = ["Sebastian Beyvers <sb@pus.de>"]
@@ -16,6 +16,7 @@ diesel = { version = "2.1.0", features = ["postgres", "i-implement-a-third-party
 uuid = { version = "1.4.1", features = ["serde", "v4"] }
 postgres-types = { version = "0.2.5", features = ["derive"], optional = true}
 bytes = "1.4.0"
+serde_with = "3.3.0"
 
 [dev-dependencies]
 chrono = "0.4.26"
