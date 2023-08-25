@@ -9,7 +9,7 @@ ___
 
 # diesel-ulid
 
-[Ulid](https://github.com/ulid/spec) mapping for [diesel-rs](https://github.com/diesel-rs/diesel). This crate contains custom mapping for the `Ulid` implementation from [rusty-ulid](https://github.com/huxi/rusty_ulid) to [diesel::sql_types::Uuid](https://docs.rs/diesel/latest/diesel/sql_types/struct.Uuid.html). With this adapter you can use these types in Diesel as regular Postgres UUID type.
+[Ulid](https://github.com/ulid/spec) mapping for [diesel-rs](https://github.com/diesel-rs/diesel) and . This crate contains custom mapping for the `Ulid` implementation from [rusty-ulid](https://github.com/huxi/rusty_ulid) to [diesel::sql_types::Uuid](https://docs.rs/diesel/latest/diesel/sql_types/struct.Uuid.html). With this adapter you can use these types in `Diesel` and `tokio_postgres` as regular Postgres UUID type.
 
 ## Import
 
@@ -20,10 +20,11 @@ cargo add diesel-ulid
 or add:
 
 ```
-diesel-ulid = 0.1.1
+diesel-ulid = 0.3.1
 ```
 
-to your `Cargo.toml`.
+to your `Cargo.toml`. While this crate was iniated for `diesel-rs` it can also be used with the `rust-postgres` driver. You can use the `postgres` or `diesel` feature to enable the corresponding adapter.
+
 
 ## Usage
 
