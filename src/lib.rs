@@ -44,6 +44,19 @@ impl DieselUlid {
         DieselUlid(Ulid::generate())
     }
 
+    pub fn from_timestamp_millis(timestamp: u64) -> Result<Self, Box<dyn Error + Sync + Send>> {
+        if (timestamp & 0xFFFF_0000_0000_0000) != 0 {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "ULID does not support timestamps after +10889-08-02T05:31:50.655Z",
+            )));
+        }
+        Ok(DieselUlid::from(Ulid::from_timestamp_with_rng(
+            timestamp,
+            &mut rand::thread_rng(),
+        )))
+    }
+
     pub fn as_byte_array(&self) -> [u8; 16] {
         <[u8; 16]>::from(self.0)
     }
