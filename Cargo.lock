@@ -193,6 +193,7 @@ dependencies = [
  "chrono",
  "diesel",
  "postgres-types",
+ "rand",
  "rusty_ulid",
  "serde",
  "serde_json",
