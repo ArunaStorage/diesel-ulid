@@ -366,6 +366,17 @@ mod tests {
         assert_eq!(format!("{:?}", ulid), format!("7ZZZZZZZZZZZZP2RK3CHJPCC9J"))
     }
 
+    #[test]
+    fn test_from_timestamp() {
+        let invalid_timestamp: u64 = u64::MAX;
+        let ulid = DieselUlid::from_timestamp_millis(invalid_timestamp);
+        assert!(ulid.is_err());
+
+        let timestamp: u64 = 1720507731354;
+        let ulid = DieselUlid::from_timestamp_millis(timestamp).unwrap();
+        assert_eq!(ulid.timestamp(), 1720507731354);
+    }
+
     // Can not test to_sql because diesel does not export Output::test()
     // #[test]
     // fn uuid_to_sql() {
