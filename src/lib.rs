@@ -44,6 +44,19 @@ impl DieselUlid {
         DieselUlid(Ulid::generate())
     }
 
+    pub fn from_timestamp_millis(timestamp: u64) -> Result<Self, Box<dyn Error + Sync + Send>> {
+        if (timestamp & 0xFFFF_0000_0000_0000) != 0 {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "ULID does not support timestamps after +10889-08-02T05:31:50.655Z",
+            )));
+        }
+        Ok(DieselUlid::from(Ulid::from_timestamp_with_rng(
+            timestamp,
+            &mut rand::thread_rng(),
+        )))
+    }
+
     pub fn as_byte_array(&self) -> [u8; 16] {
         <[u8; 16]>::from(self.0)
     }
@@ -351,6 +364,17 @@ mod tests {
         let ulid = DieselUlid::from_str("7ZZZZZZZZZZZZP2RK3CHJPCC9J").unwrap();
 
         assert_eq!(format!("{:?}", ulid), format!("7ZZZZZZZZZZZZP2RK3CHJPCC9J"))
+    }
+
+    #[test]
+    fn test_from_timestamp() {
+        let invalid_timestamp: u64 = u64::MAX;
+        let ulid = DieselUlid::from_timestamp_millis(invalid_timestamp);
+        assert!(ulid.is_err());
+
+        let timestamp: u64 = 1720507731354;
+        let ulid = DieselUlid::from_timestamp_millis(timestamp).unwrap();
+        assert_eq!(ulid.timestamp(), 1720507731354);
     }
 
     // Can not test to_sql because diesel does not export Output::test()
